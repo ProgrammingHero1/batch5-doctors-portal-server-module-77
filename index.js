@@ -28,9 +28,8 @@ async function run() {
       res.send(services);
     });
 
-    // Warning:
-    // This is not the proper way to query. 
-    // After learning more about mongodb. use aggregate lookup, pipeline, match, group
+    // Warning: This is not the proper way to query multiple collection. 
+    // After learning more about mongodb. use aggregate, lookup, pipeline, match, group
     app.get('/available', async(req, res) =>{
       const date = req.query.date;
 
@@ -65,6 +64,13 @@ async function run() {
      * app.patch('/booking/:id) //
      * app.delete('/booking/:id) //
     */
+
+    app.get('/booking', async(req, res) =>{
+      const patient = req.query.patient;
+      const query = {patient: patient};
+      const bookings = await bookingCollection.find(query).toArray();
+      res.send(bookings);
+    })
 
     app.post('/booking', async (req, res) => {
       const booking = req.body;
