@@ -20,6 +20,7 @@ async function run() {
     await client.connect();
     const serviceCollection = client.db('doctors_portal').collection('services');
     const bookingCollection = client.db('doctors_portal').collection('bookings');
+    const userCollection = client.db('doctors_portal').collection('users');
 
     app.get('/service', async (req, res) => {
       const query = {};
@@ -27,21 +28,33 @@ async function run() {
       const services = await cursor.toArray();
       res.send(services);
     });
+    
+    app.put('/user/:email', async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: user,
+      };
+      const result = await userCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    })
 
     // Warning: This is not the proper way to query multiple collection. 
     // After learning more about mongodb. use aggregate, lookup, pipeline, match, group
-    app.get('/available', async(req, res) =>{
+    app.get('/available', async (req, res) => {
       const date = req.query.date;
 
       // step 1:  get all services
       const services = await serviceCollection.find().toArray();
 
       // step 2: get the booking of that day. output: [{}, {}, {}, {}, {}, {}]
-      const query = {date: date};
+      const query = { date: date };
       const bookings = await bookingCollection.find(query).toArray();
 
       // step 3: for each service
-      services.forEach(service=>{
+      services.forEach(service => {
         // step 4: find bookings for that service. output: [{}, {}, {}, {}]
         const serviceBookings = bookings.filter(book => book.treatment === service.name);
         // step 5: select slots for the service Bookings: ['', '', '', '']
@@ -51,7 +64,7 @@ async function run() {
         //step 7: set available to slots to make it easier 
         service.slots = available;
       });
-     
+
 
       res.send(services);
     })
@@ -62,12 +75,13 @@ async function run() {
      * app.get('/booking/:id') // get a specific booking 
      * app.post('/booking') // add a new booking
      * app.patch('/booking/:id) //
+     * app.put('/booking/:id') // upsert ==> update (if exists) or insert (if doesn't exist)
      * app.delete('/booking/:id) //
     */
 
-    app.get('/booking', async(req, res) =>{
+    app.get('/booking', async (req, res) => {
       const patient = req.query.patient;
-      const query = {patient: patient};
+      const query = { patient: patient };
       const bookings = await bookingCollection.find(query).toArray();
       res.send(bookings);
     })
