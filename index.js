@@ -186,6 +186,13 @@ async function run() {
       }
     });
 
+    app.get('/booking/:id', verifyJWT, async(req, res) =>{
+      const id = req.params.id;
+      const query = {_id: ObjectId(id)};
+      const booking = await bookingCollection.findOne(query);
+      res.send(booking);
+    })
+
     app.get('/booking/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
