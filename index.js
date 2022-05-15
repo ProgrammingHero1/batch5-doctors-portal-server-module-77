@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 var nodemailer = require('nodemailer');
 var sgTransport = require('nodemailer-sendgrid-transport');
 
@@ -40,8 +40,8 @@ const emailSenderOptions = {
 
 const emailClient = nodemailer.createTransport(sgTransport(emailSenderOptions));
 
-function sendAppointmentEmail(booking){
-  const {patient, patientName, treatment, date, slot} = booking;
+function sendAppointmentEmail(booking) {
+  const { patient, patientName, treatment, date, slot } = booking;
 
   var email = {
     from: process.env.EMAIL_SENDER,
@@ -62,14 +62,14 @@ function sendAppointmentEmail(booking){
     `
   };
 
-  emailClient.sendMail(email, function(err, info){
-    if (err ){
+  emailClient.sendMail(email, function (err, info) {
+    if (err) {
       console.log(err);
     }
     else {
       console.log('Message sent: ', info);
     }
-});
+  });
 
 }
 
@@ -184,7 +184,14 @@ async function run() {
       else {
         return res.status(403).send({ message: 'forbidden access' });
       }
-    })
+    });
+
+    app.get('/booking/:id', verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const booking = await bookingCollection.findOne(query);
+      res.send(booking);
+    });
 
     app.post('/booking', async (req, res) => {
       const booking = req.body;
@@ -199,7 +206,7 @@ async function run() {
       return res.send({ success: true, result });
     });
 
-    app.get('/doctor', verifyJWT, verifyAdmin, async(req, res) =>{
+    app.get('/doctor', verifyJWT, verifyAdmin, async (req, res) => {
       const doctors = await doctorCollection.find().toArray();
       res.send(doctors);
     })
@@ -212,7 +219,7 @@ async function run() {
 
     app.delete('/doctor/:email', verifyJWT, verifyAdmin, async (req, res) => {
       const email = req.params.email;
-      const filter = {email: email};
+      const filter = { email: email };
       const result = await doctorCollection.deleteOne(filter);
       res.send(result);
     })
@@ -227,7 +234,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-  res.send('Hello From Doctor Uncle!')
+  res.send('Hello From Doctor Uncle portal!')
 })
 
 app.listen(port, () => {
