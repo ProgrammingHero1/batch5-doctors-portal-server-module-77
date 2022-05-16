@@ -82,6 +82,7 @@ async function run() {
     const bookingCollection = client.db('doctors_portal').collection('bookings');
     const userCollection = client.db('doctors_portal').collection('users');
     const doctorCollection = client.db('doctors_portal').collection('doctors');
+    const paymentCollection = client.db('doctors_portal').collection('payments');
 
     const verifyAdmin = async (req, res, next) => {
       const requester = req.decoded.email;
@@ -206,12 +207,6 @@ async function run() {
       res.send(booking);
     })
 
-    app.get('/booking/:id', verifyJWT, async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: ObjectId(id) };
-      const booking = await bookingCollection.findOne(query);
-      res.send(booking);
-    });
 
     app.post('/booking', async (req, res) => {
       const booking = req.body;
@@ -225,6 +220,22 @@ async function run() {
       sendAppointmentEmail(booking);
       return res.send({ success: true, result });
     });
+
+    app.patch('/booking/:id', verifyJWT, async(req, res) =>{
+      const id  = req.params.id;
+      const payment = req.body;
+      const filter = {_id: ObjectId(id)};
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId
+        }
+      }
+
+      const result = await paymentCollection.insertOne(payment);
+      const updatedBooking = await bookingCollection.updateOne(filter, updatedDoc);
+      res.send(updatedBooking);
+    })
 
     app.get('/doctor', verifyJWT, verifyAdmin, async (req, res) => {
       const doctors = await doctorCollection.find().toArray();
